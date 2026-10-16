@@ -1,0 +1,84 @@
+/* The Noctyl server's sign-in page: a centred column on a plain page.
+   Dark or light with the system. Username and password only: nothing else is asked for. */
+:root {
+  --bg: #0a0a0a; --text: #ededed; --dim: #a1a1a1; --faint: #6b6b6b; --strong: #fff;
+  --field: rgba(255, 255, 255, .045); --field-hover: rgba(255, 255, 255, .07); --line: rgba(255, 255, 255, .11); --focus: rgba(255, 255, 255, .38);
+  --btn: #f5f5f5; --btn-text: #0a0a0a; --btn-idle: rgba(255, 255, 255, .06); --btn-idle-text: #707070;
+  --mark: #0d0d0d; --danger: #ff8a80; --code: rgba(255, 255, 255, .04);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fafafa; --text: #1a1a1a; --dim: #5c5c5c; --faint: #9a9a9a; --strong: #000;
+    --field: rgba(0, 0, 0, .03); --field-hover: rgba(0, 0, 0, .05); --line: rgba(0, 0, 0, .12); --focus: rgba(0, 0, 0, .45);
+    --btn: #111; --btn-text: #fff; --btn-idle: rgba(0, 0, 0, .05); --btn-idle-text: #9a9a9a;
+    --mark: #111; --danger: #c5221f; --code: rgba(0, 0, 0, .035);
+    color-scheme: light;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  position: relative; display: grid; place-items: center; min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+  padding: max(32px, env(safe-area-inset-top)) 20px max(32px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  color: var(--text); font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+
+/* the column */
+.auth { position: relative; z-index: 1; width: 100%; max-width: 392px; animation: rise .5s cubic-bezier(.22, .8, .24, 1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+.mark {
+  display: grid; place-items: center; width: 60px; height: 60px; margin: 0 auto 26px; border-radius: 16px;
+  background: var(--mark); border: 1px solid var(--line); box-shadow: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 10px 30px rgba(0, 0, 0, .35);
+}
+.mark img { display: block; width: 32px; height: 32px; object-fit: contain; }
+.view { display: flex; flex-direction: column; gap: 16px; }
+h1 { margin: 0; font-size: 28px; line-height: 1.2; font-weight: 600; letter-spacing: -.02em; color: var(--strong); text-align: center; }
+.sub { margin: -6px 0 10px; font-size: 15px; color: var(--dim); text-align: center; }
+.sub + .sub { margin-top: -14px; }
+
+label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; font-weight: 500; color: var(--dim); }
+label small { font-size: 12.5px; font-weight: 400; color: var(--faint); }
+input:not([type=checkbox]) {
+  height: 50px; padding: 0 16px; font: inherit; font-size: 16px; font-weight: 400; color: var(--text);   /* 16px: phones don't zoom in */
+  background: var(--field); border: 1px solid var(--line); border-radius: 13px; outline: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25) inset; transition: border-color .15s, background .15s, box-shadow .15s;
+}
+input:not([type=checkbox]):hover { background: var(--field-hover); }
+input:not([type=checkbox]):focus { border-color: var(--focus); box-shadow: 0 0 0 4px color-mix(in srgb, var(--focus) 18%, transparent); }
+input::placeholder { color: var(--faint); }
+
+button { font: inherit; cursor: pointer; color: var(--text); }
+button:disabled { cursor: default; }
+/* the main button: quiet until the form is filled in, then bright */
+button.primary {
+  height: 50px; margin-top: 4px; border: 1px solid transparent; border-radius: 13px; font-weight: 600;
+  background: var(--btn); color: var(--btn-text); transition: background .2s, color .2s, transform .1s;
+}
+button.primary:active { transform: scale(.985); }
+form:invalid button.primary, button.primary:disabled { background: var(--btn-idle); color: var(--btn-idle-text); border-color: var(--line); }
+button.ghost { height: 40px; padding: 0 18px; border-radius: 11px; border: 1px solid var(--line); background: var(--field); }
+button.ghost:hover { background: var(--field-hover); }
+button.link { border: 0; background: none; padding: 0; color: var(--dim); font-size: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 3px; }
+button.link:hover { color: var(--text); }
+button.link.strong { color: var(--strong); font-weight: 600; text-decoration: none; }
+button.link.strong:hover { text-decoration: underline; }
+.foot { margin: 6px 0 0; text-align: center; font-size: 14px; }
+
+.err { margin: 0; font-size: 13.5px; color: var(--danger); text-align: center; }
+.err:empty { display: none; }
+.code { display: block; padding: 16px; border-radius: 13px; background: var(--code); border: 1px solid var(--line); text-align: center; font: 600 16px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; color: var(--strong); word-break: break-all; user-select: all; }
+.row { display: flex; gap: 10px; justify-content: center; }
+label.check { flex-direction: row; align-items: center; gap: 10px; font-size: 14px; color: var(--text); cursor: pointer; justify-content: center; }
+label.check input { width: 17px; height: 17px; accent-color: var(--strong); }
+
+@media (max-width: 480px) {
+  h1 { font-size: 25px; }
+}
+@media (prefers-reduced-motion: reduce) { .auth { animation: none; } }
+
+/* no pinch or double-tap zoom; scrolling still works */
+html, body { touch-action: pan-x pan-y; }

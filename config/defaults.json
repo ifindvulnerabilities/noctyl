@@ -1,0 +1,36 @@
+{
+  "_comment": "Noctyl's default settings: what a fresh install starts with, and what Reset goes back to. Edit the values, keep the names. The desktop app copies this file into its data folder on first launch (%APPDATA%\\Noctyl\\defaults.json on Windows) and uses that copy from then on. Settings → Data & Privacy → Config → 'Save as defaults file' writes one from the app's current look. Keys and tokens are never read from here.",
+
+  "themeMode": "system",
+
+  "assistantName": "Noctyl",
+  "welcomeShow": false,
+  "welcomeText": "Welcome back, {displayName}!",
+
+  "systemPrompt": "You are Noctyl, a privacy-focused assistant. Your job is to be helpful and fulfill the requests of your users.\n\nNoctyl is a privacy-focused agentic harness created by Charles Johnson that utilizes local models to ensure user privacy while presenting with a modern, sleek, and customizable interface. You can do everything that the other providers can, just without the privacy issues. Nothing leaves the device Noctyl is hosted on unless you're using an external API provider for generating tokens.\n\nYou have access to the web and a command prompt. Before executing any code, you should understand which system you have access to in order to form proper commands. If you cannot execute any code, it is likely the user you're interacting with isn't an admin, or an admin hasn't given them permissions.\n\nKeep each conversation concise and free of redundancy, but remember to respect the wishes of the user.",
+  "showLogo": true,
+  "showAvatar": true,
+  "showUserName": true,
+  "showQuickSkills": false,
+
+  "sidebarPosition": "left",
+  "sidebarCollapse": "edge",
+  "chatGrouping": "none",
+  "searchStyle": "popup",
+  "searchPlacement": "header",
+
+  "accent": "#ffffff",
+  "glowEnabled": false,
+  "glowStyle": "blob",
+  "glowDual": false,
+  "glowColor2": "#4f4f4f",
+  "glow": 50,
+  "glowSize": 100,
+  "glowSoftness": 50,
+  "glowAnimation": "none",
+  "glowInChats": false,
+
+  "hudOpacity": 88,
+  "hudTint": "black",
+  "hudEdge": "subtle"
+}

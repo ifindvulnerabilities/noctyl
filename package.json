@@ -1,0 +1,102 @@
+{
+  "name": "noctyl",
+  "productName": "Noctyl",
+  "version": "1.0.0",
+  "description": "Noctyl: a privacy-focused agent harness by Charles Johnson.",
+  "author": "ifindvulnerabilities/Charles Johnson",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "serve": "node server/index.js",
+    "dist:win": "electron-builder --win --x64",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "pack": "electron-builder --dir"
+  },
+  "build": {
+    "appId": "cc.cyberwatch.noctyl",
+    "productName": "Noctyl",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "index.html",
+      "app.js",
+      "early.js",
+      "styles.css",
+      "dictation-worklet.js",
+      "assets/**",
+      "config/**",
+      "build/icon.png",
+      "electron/**",
+      "package.json",
+      "!**/*.map"
+    ],
+    "asarUnpack": [
+      "node_modules/onnxruntime-node/**",
+      "node_modules/sharp/**",
+      "node_modules/@img/**"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Noctyl-${version}-${arch}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Noctyl",
+      "artifactName": "Noctyl-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Noctyl-${version}-portable.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Noctyl uses the microphone for on-device dictation. Your voice never leaves this computer."
+      }
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "maintainer": "CyberWatch",
+      "executableName": "noctyl",
+      "synopsis": "Chat with local and cloud AI models",
+      "desktop": {
+        "entry": {
+          "Name": "Noctyl",
+          "Comment": "Chat with local and cloud AI models",
+          "StartupWMClass": "Noctyl",
+          "Keywords": "AI;chat;LLM;Ollama;"
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.1"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

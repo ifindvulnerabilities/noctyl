@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Noctyl</title>
+  <!-- before anything is drawn: last time's light / dark look (early.js) -->
+  <script src="early.js"></script>
+  <!-- tab icon (browser): the moon, white on dark tab bars and dark on light ones (favicon.svg switches by itself);
+       the PNG is for browsers that don't take SVG icons -->
+  <link rel="icon" href="assets/Logo.png" type="image/png" sizes="512x512">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">   <!-- square, on a dark background: iOS shows a transparent icon on black or as a letter -->
+  <!-- No third-party requests: fonts are local-only (see @font-face in styles.css). -->
+  <link rel="stylesheet" href="assets/katex/katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Desktop title bar: an invisible drag layer over the top edge; the OS draws the window buttons over it. Zero height in a browser. -->
+  <div class="titlebar" aria-hidden="true"></div>
+  <!-- Desktop only: title bar buttons, just left of the OS window controls -->
+  <div class="titlebar-actions" id="titlebarActions" hidden>
+    <!-- the project on GitHub: opens in your browser (the desktop app sends new-window links there) -->
+    <a class="titlebar-btn" id="githubBtn" href="https://github.com/ifindvulnerabilities/noctyl" target="_blank" rel="noopener noreferrer" aria-label="Noctyl on GitHub" aria-describedby="githubTip">
+      <!-- outline GitHub cat, drawn like the HUD icon beside it (1.6 stroke, round ends) -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+      <span class="titlebar-tip" id="githubTip" role="tooltip"><span>View on GitHub</span></span>
+    </a>
+    <button class="titlebar-btn" id="hudBtn" type="button" aria-label="HUD mode (Ctrl+Shift+H)" aria-describedby="hudTip">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 8V6a2.5 2.5 0 0 0-2.5-2.5H5.5A2.5 2.5 0 0 0 3 6v5a2.5 2.5 0 0 0 2.5 2.5H6V16l2.6-2.2"/><path d="M11 9.5h7.5A2.5 2.5 0 0 1 21 12v4.5a2.5 2.5 0 0 1-2.5 2.5H18v2l-2.7-2H11a2.5 2.5 0 0 1-2.5-2.5V12A2.5 2.5 0 0 1 11 9.5z"/></svg>
+      <span class="titlebar-tip" id="hudTip" role="tooltip"><span>HUD mode</span><kbd id="hudKbd">Ctrl+Shift+H</kbd></span>
+    </button>
+    <!-- actions for the open conversation (shown only while one is open) -->
+    <button class="titlebar-btn" id="chatMenuBtn" type="button" aria-label="Conversation options" aria-haspopup="menu" hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>
+    </button>
+  </div>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+    <div class="sidebar-inner">
+
+      <div class="banner">
+        <div class="logo" id="logo">
+          <!-- Logo banner. To use a vector version, change the extension to .svg — nothing else needs to change.
+               Text fallback shows if the file is missing. -->
+          <img src="assets/Noctyl-LogoBanner-Dark.png" alt="Noctyl" id="logoImg">
+          <span class="logo-fallback" id="logoFallback" hidden>Noctyl</span>
+        </div>
+        <div class="banner-actions">
+          <!-- Search chats as an icon (Settings → Customization → Branding); otherwise it's the button under New chat -->
+          <button class="icon-btn" id="searchIconBtn" type="button" aria-label="Search chats" title="Search chats (Ctrl+Shift+K)" hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          </button>
+          <button class="icon-btn" id="sidebarToggle" aria-label="Collapse sidebar" title="Collapse sidebar (Ctrl+B)">
+            <svg class="ico-phone" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <!-- replace with assets/layout-sidebar.svg (node 7:60) if desired -->
+            <svg class="ico-wide" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="pill pill-new" id="newChatBtn">
+          <!-- replace with assets/pen-new-square.svg (node 7:66) if desired -->
+          <svg class="pill-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5H7.5A3 3 0 0 0 4.5 7.5v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V12"/><path d="M17.8 3.7a1.9 1.9 0 0 1 2.7 2.7l-8.2 8.2-3.4.7.7-3.4z"/></svg>
+          <span>New chat</span>
+          <kbd class="pill-kbd" id="newChatKbd">Ctrl+Shift+O</kbd>
+        </button>
+        <button class="pill pill-search" id="searchBtn">
+          <svg class="pill-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          <span>Search chats</span>
+          <kbd class="pill-kbd" id="searchKbd">Ctrl+Shift+K</kbd>
+        </button>
+        <!-- top / bottom bar only: the chat list doesn't fit across, so it opens as a drop-down from here -->
+        <button class="pill pill-chats" id="chatsBarBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="chatsGroup">
+          <svg class="pill-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4 3v-3H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/></svg>
+          <span>Chats</span>
+        </button>
+        <!-- top / bottom bar only: pinned quick skills open as a drop-down, like Chats -->
+        <button class="pill pill-skills" id="skillsBarBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="skillsGroup">
+          <svg class="pill-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/></svg>
+          <span>Quick Skills</span>
+        </button>
+      </div>
+
+      <section class="group group-skills" id="skillsGroup" aria-labelledby="skillsLabel">
+        <div class="group-head">
+          <h3 id="skillsLabel">Quick Skills</h3>
+          <button class="group-action" id="manageSkills" type="button" title="Manage quick skills" aria-label="Manage quick skills">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+          </button>
+        </div>
+        <ul class="list" id="skillList"></ul>
+        <p class="empty-note skills-empty" id="skillsEmpty" hidden>Type <b>/</b> in the chat bar and pin a skill, or <button type="button" class="text-link">manage skills</button>.</p>
+      </section>
+
+      <!-- Projects (Settings → Customization → Sidebar → Projects): chats grouped with shared instructions; on a Noctyl server they can be shared -->
+      <section class="group group-projects" id="projectsGroup" aria-labelledby="projectsLabel" hidden>
+        <div class="group-head">
+          <h3 id="projectsLabel">Projects</h3>
+          <button class="group-action" id="newProjectBtn" type="button" title="New project" aria-label="New project">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <ul class="list" id="projectList"></ul>
+        <p class="empty-note" id="projectsEmpty">No projects yet. <button type="button" class="text-link" id="projectsEmptyNew">Make one</button></p>
+      </section>
+
+      <section class="group group-chats" id="chatsGroup" aria-labelledby="chatsLabel">
+        <h3 id="chatsLabel">Chats</h3>
+        <ul class="list" id="chatList"></ul>
+        <p class="empty-note" id="chatsEmpty">No chats yet</p>
+      </section>
+
+      <div class="user-bar">
+        <div class="user">
+          <img class="avatar" data-avatar src="assets/account.png" alt="" aria-hidden="true">
+          <span class="user-name" id="userName">Anonymous</span>
+        </div>
+        <!-- Noctyl server, admins only: the admin panel (Settings → Admin; also at /admin) -->
+        <button class="icon-btn" id="openAdmin" aria-label="Admin panel" title="Admin panel" hidden>
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.3 3 8 7 9.5 4-1.5 7-5.2 7-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
+        </button>
+        <button class="icon-btn" id="openSettings" aria-label="Settings" title="Settings">
+          <!-- replace with assets/settings.svg (node 7:91) if desired -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main is-empty" id="main">
+    <div class="glow" id="glow" aria-hidden="true"></div>
+
+    <div class="floating-controls" id="floatingControls">
+      <button class="icon-btn" id="sidebarOpen" aria-label="Open sidebar" title="Open sidebar (Ctrl+B)">
+        <svg class="ico-phone" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 9h14M5 15h14"/></svg>
+        <svg class="ico-wide" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M9.5 4.5v15"/></svg>
+      </button>
+      <!-- phones: the model (and effort) picker sits up here, like Gemini; on wider screens it's in the message box -->
+      <button class="top-model" id="topModelBtn" type="button" aria-haspopup="menu" aria-label="Choose model">
+        <span id="topModelLabel">Model</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <span class="fc-spacer"></span>
+      <button class="icon-btn" id="floatingNew" aria-label="New chat" title="New chat (Ctrl+Shift+O)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5H7.5A3 3 0 0 0 4.5 7.5v9a3 3 0 0 0 3 3h9a3 3 0 0 0 3-3V12"/><path d="M17.8 3.7a1.9 1.9 0 0 1 2.7 2.7l-8.2 8.2-3.4.7.7-3.4z"/></svg>
+      </button>
+      <!-- phones: the open conversation's options (on a wide screen they're in the title bar or the sidebar ⋯) -->
+      <button class="icon-btn" id="floatingMore" aria-label="Conversation options" aria-haspopup="menu" hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+      </button>
+    </div>
+
+    <div class="chat-title-bar" id="chatTitleBar"><span id="chatTitleText"></span></div>
+
+    <div class="messages-wrap" id="messagesWrap">
+      <div class="messages" id="messages" role="log" aria-live="polite"></div>
+    </div>
+
+    <section class="search-view" id="searchView" aria-label="Search chats">
+      <label class="search-box">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+        <input type="text" id="searchInput" placeholder="Search chats" autocomplete="off" spellcheck="false" aria-label="Search chats">
+      </label>
+      <h2 class="search-heading" id="searchHeading">Recent</h2>
+      <ul class="search-results" id="searchResults"></ul>
+      <p class="search-empty" id="searchEmpty" hidden>No chats yet</p>
+    </section>
+
+    <div class="stage">
+      <img class="welcome-logo" id="welcomeLogo" src="assets/Logo.png" alt="" aria-hidden="true">
+      <h1 class="welcome-title" id="welcomeTitle">What are you hacking?</h1>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <!-- attached image thumbnails; when present the bar becomes images / text / controls -->
+        <div class="attachments" id="attachments" hidden aria-label="Attached images"></div>
+        <button type="button" class="composer-plus" id="plusBtn" aria-label="More actions" aria-haspopup="menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
+        <div class="slash-menu" id="slashMenu" role="listbox" aria-label="Commands" hidden></div>
+        <textarea id="prompt" rows="1" placeholder="Ask Noctyl" aria-label="Message Noctyl" aria-controls="slashMenu" aria-expanded="false" aria-autocomplete="list"></textarea>
+        <!-- the chat's agent, when one is on (type @ or use the + menu to pick one) -->
+        <button type="button" class="agent-chip" id="agentChip" aria-haspopup="menu" hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="7.5" width="15" height="11" rx="3.5"/><path d="M12 7.5V4.5M9.5 12.5v1M14.5 12.5v1"/></svg>
+          <span id="agentLabel">Agent</span>
+        </button>
+        <!-- the projects this chat searches (Knowledge), when there are any -->
+        <button type="button" class="agent-chip knowledge-chip" id="knowledgeChip" aria-haspopup="menu" hidden>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2h6.5A1.5 1.5 0 0 1 20 7.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"/></svg>
+          <span>Knowledge</span>
+        </button>
+        <button type="button" class="model-chip" id="modelBtn" aria-haspopup="menu" title="Choose model">
+          <span id="modelLabel">Model</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <!-- live microphone level while dictating (replaces the text box until you stop) -->
+        <canvas class="wave" id="wave" hidden aria-hidden="true"></canvas>
+        <button type="button" class="mic-btn tip" id="micBtn" aria-label="Dictate" aria-pressed="false" data-tip="Dictate (Ctrl+Shift+D)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+        </button>
+        <button type="button" class="dict-stop tip" id="dictStop" aria-label="Stop dictation" data-tip="Stop dictation (Esc)" hidden>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect width="14" height="14" rx="3"/></svg>
+        </button>
+        <!-- only in the bar while there is text to send (or a reply to stop); pops in and out -->
+        <button type="submit" class="send-btn" id="sendBtn" aria-label="Send" hidden>
+          <svg class="ico-send" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+          <svg class="ico-stop" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2.5"/></svg>
+        </button>
+        <!-- HUD mode only: expand back into the full window -->
+        <button type="button" class="hud-exit tip" id="hudExit" aria-label="Back to full window" data-tip="Back to full window (Ctrl+Shift+H)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>
+        </button>
+      </form>
+      <p class="footnote" id="footnote">Noctyl runs locally on Ollama. Responses may be inaccurate.</p>
+    </div>
+  </main>
+
+  <!-- ============ FLOATING SEARCH (Customization → Search → Floating search box) ============ -->
+  <div class="spotlight" id="spotlight" role="dialog" aria-modal="true" aria-label="Search chats" hidden>
+    <div class="spot-box" id="spotBox">
+      <div class="spot-input">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+        <input type="text" id="spotInput" placeholder="Search for a chat" autocomplete="off" spellcheck="false" aria-label="Search for a chat" aria-controls="spotResults" role="combobox" aria-expanded="false">
+        <span class="spot-sep" aria-hidden="true"></span>
+        <button type="button" class="spot-close" id="spotClose" aria-label="Close search" title="Close (Esc)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <ul class="spot-results" id="spotResults" role="listbox" aria-label="Matching chats"></ul>
+    </div>
+  </div>
+
+  <!-- ============ SETTINGS PAGE ============ -->
+  <section class="settings" id="settings" aria-hidden="true" role="dialog" aria-label="Settings">
+    <div class="settings-shell">
+      <!-- Phones only: every settings page as a list (like a phone's own settings); a page opens over it -->
+      <div class="settings-home" id="settingsHome">
+        <header class="sh-head">
+          <button class="icon-btn" id="closeSettingsHome" type="button" aria-label="Close settings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+          <h2>Settings</h2>
+        </header>
+        <label class="sh-search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          <input type="search" id="settingsSearch" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search settings">
+        </label>
+        <div id="settingsHomeList"></div>
+        <p class="sh-empty" id="settingsHomeEmpty" hidden>No settings match.</p>
+      </div>
+      <!-- Left nav: groups with sub-pages, built from SETTINGS_NAV in app.js -->
+      <aside class="settings-nav">
+        <div class="settings-nav-title">Settings</div>
+        <nav id="settingsNav" aria-label="Settings sections"></nav>
+        <div class="settings-nav-foot">
+          <button class="icon-btn" id="importConfig" type="button" title="Import config" aria-label="Import config">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M4.5 16v2.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
+          </button>
+          <button class="icon-btn" id="exportConfig" type="button" title="Export config" aria-label="Export config">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4.5 16v2.5A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
+          </button>
+          <button class="icon-btn" id="resetConfig" type="button" title="Reset to defaults" aria-label="Reset settings to defaults">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9"/><path d="M4.5 4.5V9H9"/></svg>
+          </button>
+          <input type="file" id="importConfigFile" accept="application/json,.json" hidden>
+        </div>
+      </aside>
+
+      <div class="settings-main">
+        <header class="settings-head">
+          <button class="icon-btn" id="settingsBack" type="button" aria-label="All settings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m15 5-7 7 7 7"/></svg>
+          </button>
+          <ol class="crumbs" id="settingsCrumbs" aria-label="Breadcrumb"></ol>
+          <button class="icon-btn" id="closeSettings" aria-label="Close settings">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </header>
+
+        <div class="settings-panels" id="settingsPanels">
+
+          <!-- General -->
+          <div class="panel active" data-panel="profile">
+            <div class="field">
+              <div class="field-text"><label>Profile picture</label><p>PNG, JPEG, GIF, or WebP up to 5 MB. It's cropped to a circle and re-made on this device; the original file is never stored.</p></div>
+              <div class="avatar-edit">
+                <img class="avatar avatar-lg" data-avatar src="assets/account.png" alt="Your profile picture">
+                <button class="btn" id="avatarUpload" type="button">Upload</button>
+                <button class="btn" id="avatarRemove" type="button" hidden>Remove</button>
+                <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-displayName">Display name</label><p>Shown at the bottom of the sidebar.</p></div>
+              <input type="text" id="s-displayName" data-setting="displayName" placeholder="Anonymous">
+            </div>
+          </div>
+          <!-- Noctyl server only: your account, and (admins) who can sign up -->
+          <div class="panel" data-panel="account">
+            <div class="field">
+              <div class="field-text"><label>Signed in as <span id="acctName">…</span></label><p id="acctInfo">Your chats, settings and keys are kept on this Noctyl server, encrypted with a key only your password or recovery code can unlock. API keys never come back to your browser.</p></div>
+              <div class="btn-row"><button class="btn" id="acctSignOut" type="button">Sign out</button></div>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Change password</label><p>You stay signed in here; everywhere else is signed out.</p></div>
+              <form class="pf-grid acct-form" id="acctPassword" autocomplete="on">
+                <input type="text" name="username" autocomplete="username" hidden>
+                <label class="pf-field pf-wide"><span>Current password</span><input type="password" name="current" autocomplete="current-password" required></label>
+                <label class="pf-field"><span>New password</span><input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
+                <label class="pf-field"><span>New password again</span><input type="password" name="password2" autocomplete="new-password" minlength="10" required></label>
+                <div class="pf-wide"><button class="btn" type="submit">Change password</button></div>
+              </form>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Recovery code</label><p>The only way back in if you forget your password. Making a new one replaces the old one.</p></div>
+              <button class="btn" id="acctRecovery" type="button">Make a new code</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Sign out everywhere</label><p>Ends every session of this account, on every device, this one included.</p></div>
+              <button class="btn" id="acctSignOutAll" type="button">Sign out everywhere</button>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Where you're signed in</label><p id="sessNote">Each sign-in lasts at most 6 hours, and ends sooner if it isn't used.</p></div>
+              <ul class="mcp-list" id="sessList"></ul>
+            </div>
+
+            <div class="field">
+              <div class="field-text"><label>Your usage</label><p id="myUsage">…</p></div>
+            </div>
+            <p class="note">Admins of this server can see how much each account uses (requests, tokens, which models, sign-ins), never what you write.</p>
+          </div>
+
+          <!-- Noctyl server only: workspaces and the conversation links you've shared -->
+          <div class="panel" data-panel="sharing">
+            <div class="field field-col">
+              <div class="field-text"><label>Workspaces</label><p>A group of people on this server. Share conversations, projects and (admins) providers with a whole workspace at once. Owners and managers add and remove people.</p></div>
+              <ul class="mcp-list" id="wsList"></ul>
+              <form class="mcp-add" id="wsAdd" autocomplete="off">
+                <input type="text" id="wsNewName" placeholder="New workspace name" maxlength="60" aria-label="New workspace name">
+                <button class="btn" type="submit">Make workspace</button>
+              </form>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Your shared conversations</label><p>Links to copies of your conversations. Only people signed in to this server that you shared with can open them. Updating a link copies the conversation as it is now.</p></div>
+              <ul class="mcp-list" id="myShareList"></ul>
+            </div>
+          </div>
+
+          <!-- Noctyl server, admins only: Settings → Server -->
+          <div class="panel" data-panel="server-users">
+            <div class="field field-col">
+              <div class="field-text"><label>Accounts</label><p>Pause an account to keep everything but stop it signing in. Reset is for someone who lost both their password and recovery code: they get a temporary password, and their old data is erased, because nobody can open it without their password.</p></div>
+              <div class="skill-toolbar"><input type="search" id="userSearch" placeholder="Search accounts" aria-label="Search accounts" spellcheck="false"><span class="dim" id="userCount"></span></div>
+              <ul class="mcp-list" id="acctList"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Add an account</label><p>They get the temporary password you choose and pick their own when they first sign in; only then can they open their data.</p></div>
+              <form class="mcp-add" id="acctAdd" autocomplete="off">
+                <input type="text" id="acctNewName" placeholder="Name" maxlength="32" spellcheck="false" aria-label="New account name">
+                <input type="text" id="acctNewPass" placeholder="Temporary password (10+ characters)" spellcheck="false" aria-label="Temporary password">
+                <label class="sf-check"><input type="checkbox" id="acctNewAdmin"><span>Admin</span></label>
+                <button class="btn" type="submit">Add account</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="server-usage">
+            <div class="usage-filters">
+              <select id="usageRange" aria-label="Time range">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last 12 months</option>
+                <option value="all">All time</option>
+              </select>
+              <select id="usageGroup" aria-label="Group by">
+                <option value="day">By day</option>
+                <option value="month">By month</option>
+                <option value="year">By year</option>
+              </select>
+              <select id="usageUser" aria-label="Account"><option value="all">All accounts</option></select>
+            </div>
+            <div class="usage-tiles" id="usageTiles"></div>
+            <figure class="usage-chart">
+              <figcaption><b>Model requests</b> <span class="dim" id="usageChartNote"></span></figcaption>
+              <div class="uc-plot" id="usageChart" role="img"></div>
+              <div class="uc-axis" id="usageAxis"></div>
+            </figure>
+            <h4 class="panel-sub">By account</h4>
+            <div class="usage-table-wrap"><table class="usage-table" id="usageByUser"></table></div>
+            <h4 class="panel-sub">By model</h4>
+            <div class="usage-table-wrap"><table class="usage-table" id="usageByModel"></table></div>
+            <h4 class="panel-sub">By <span id="usageGroupWord">day</span></h4>
+            <div class="usage-table-wrap"><table class="usage-table" id="usageByPeriod"></table></div>
+            <p class="note">Only numbers are kept: requests, tokens (when the provider reports them), errors and sign-ins, per account and day. Nobody's messages are stored for this.</p>
+          </div>
+
+          <div class="panel" data-panel="server-sharing">
+            <div class="field field-col">
+              <div class="field-text"><label>Shared providers</label><p>Let other accounts use one of your providers without seeing its key. They only get a stand-in; the server adds the key to their requests itself, only for that provider's address and its model endpoints (never its account or billing APIs), only for the models you allow, and only up to the daily limit you set. If you change or remove the provider in your own settings, the share follows.</p></div>
+              <ul class="mcp-list" id="shareList"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Share a provider</label><p>Pick one of your providers that has a key (Providers → API keys, Custom Providers or Local Models).</p></div>
+              <form class="provider-form" id="shareAdd" autocomplete="off">
+                <div class="pf-grid">
+                  <label class="pf-field"><span>Provider</span><select id="shareSource"></select></label>
+                  <label class="pf-field"><span>Name others see</span><input type="text" id="shareName" maxlength="40" placeholder="Team OpenRouter"></label>
+                  <label class="pf-field"><span>Who can use it</span><select id="shareWho"><option value="all">Every account</option><option value="some">Chosen accounts</option></select></label>
+                  <label class="pf-field"><span>Messages per person per day</span><input type="number" id="shareLimit" min="0" value="0"><small>Each message sent to the model counts. 0 means no limit.</small></label>
+                  <div class="pf-field pf-wide" id="sharePeople" hidden><span>Accounts</span><div class="share-people"></div><span>Workspaces</span><div class="share-workspaces"></div></div>
+                  <label class="pf-field pf-wide"><span>Only these models</span><textarea id="shareModels" rows="2" spellcheck="false" placeholder="Leave empty to allow every model, or list them: one per line or comma-separated"></textarea></label>
+                </div>
+                <div class="pf-actions"><button class="btn btn-primary" type="submit">Share</button></div>
+              </form>
+            </div>
+            <p class="note">Shared keys are kept on the server under the server's own key (an account's own keys are locked with its password), because they must work while you're signed out. Share only keys you'd trust this server with.</p>
+          </div>
+
+          <div class="panel" data-panel="server-collab">
+            <div class="field field-col">
+              <div class="field-text"><label>Shared conversations</label><p>Every conversation link on this server. Stopping one removes the copy; the owner keeps their chat.</p></div>
+              <ul class="mcp-list" id="adminShareList"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Shared projects</label><p>Stopping one leaves it with its owner only; nothing is deleted.</p></div>
+              <ul class="mcp-list" id="adminProjectList"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Workspaces</label></div>
+              <ul class="mcp-list" id="adminWsList"></ul>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="server-access">
+            <div class="field">
+              <div class="field-text"><label for="s-reg">Who can sign up</label><p id="regNote">You can change this any time, and switch back; nothing is deleted. If you're ever locked out, run <code>node server mode open</code> on the server.</p></div>
+              <select id="s-reg">
+                <option value="single">Just me (one account)</option>
+                <option value="open">Anyone can sign up</option>
+                <option value="admin">Only admins add accounts</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-maxusers">Most accounts</label><p>0 means no limit.</p></div>
+              <input type="number" id="s-maxusers" min="0" max="100000">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-sessHours">Sign-ins last</label><p>Hours before anyone has to sign in again (6 at most).</p></div>
+              <input type="number" id="s-sessHours" min="0.25" max="6" step="0.25">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-idleMin">Sign out when idle for</label><p>Minutes without using Noctyl before a sign-in ends.</p></div>
+              <input type="number" id="s-idleMin" min="5" max="360" step="5">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-srvCommands">Commands</label><p>Let models run commands (the agent's run_command tool) on this server's computer. When on, admins can use it, and so can accounts you allow in Admin → Users (each switches it on for itself). Each command is shown first and only runs after it's allowed, and every one is written to the server's log.</p></div>
+              <select id="s-srvCommands">
+                <option value="off">Off</option>
+                <option value="admins">On: admins and allowed accounts</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-srvOllama">Ollama for everyone</label><p>Where Ollama runs, if it isn't on this server: another device on your network or tailnet, like a desktop with a GPU (start Ollama there with <code>OLLAMA_HOST=0.0.0.0</code>). Every account can use it; anyone who set their own address keeps theirs. Empty: this server.</p></div>
+              <input type="text" id="s-srvOllama" placeholder="http://100.101.102.103:11434" spellcheck="false">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-privnet">Local models and network addresses</label><p>Who may reach this computer and its network through the server (Ollama, llama.cpp, ComfyUI…). Shared addresses below, and shared providers, work for everyone they're shared with; cloud providers always work.</p></div>
+              <select id="s-privnet">
+                <option value="admins">Admins only</option>
+                <option value="everyone">Everyone</option>
+                <option value="nobody">Nobody</option>
+              </select>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label for="s-shared">Shared addresses</label><p>One <code>host:port</code> per line that every account can use, like the Ollama you share: <code>localhost:11434</code>.</p></div>
+              <textarea id="s-shared" rows="3" spellcheck="false"></textarea>
+            </div>
+          </div>
+          <div class="panel" data-panel="behavior">
+            <div class="field">
+              <div class="field-text"><label for="s-enter">Enter to send</label><p>Off: Enter adds a new line, Ctrl/⌘+Enter sends.</p></div>
+              <label class="switch"><input type="checkbox" id="s-enter" data-setting="enterToSend"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-anim">Animations</label><p>Chat list, message, and sidebar motion.</p></div>
+              <label class="switch"><input type="checkbox" id="s-anim" data-setting="animations"><span></span></label>
+            </div>
+          </div>
+
+          <!-- Customization -->
+          <div class="panel" data-panel="branding">
+            <div class="field">
+              <div class="field-text"><label>Logo banner, dark mode</label><p>Shown at the top of the sidebar in dark mode, so light lettering works best. PNG, JPEG, GIF, or WebP up to 5 MB; wide images work best. It's re-made on this device; the original file is never stored.</p></div>
+              <div class="logo-edit">
+                <div class="logo-preview on-dark"><img id="logoPreview" src="assets/Noctyl-LogoBanner-Dark.png" alt="Dark mode logo banner"></div>
+                <button class="btn" id="logoUpload" type="button">Upload</button>
+                <button class="btn" id="logoRemove" type="button" hidden>Reset</button>
+                <input type="file" id="logoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Logo banner, light mode</label><p>Shown in light mode, so dark lettering works best. Without one, light mode uses the built-in dark-lettered banner.</p></div>
+              <div class="logo-edit">
+                <div class="logo-preview on-light"><img id="logoPreviewLight" src="assets/Noctyl-LogoBanner-Light.png" alt="Light mode logo banner"></div>
+                <button class="btn" id="logoUploadLight" type="button">Upload</button>
+                <button class="btn" id="logoRemoveLight" type="button" hidden>Reset</button>
+                <input type="file" id="logoFileLight" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Welcome logo</label><p>The mark above the welcome heading on a new chat (shown while the heading is on). PNG, JPEG, GIF, or WebP up to 5 MB; square images with a transparent background work best.</p></div>
+              <div class="logo-edit">
+                <div class="logo-preview welcome-preview"><img id="welcomeLogoPreview" src="assets/Logo.png" alt="Welcome logo"></div>
+                <button class="btn" id="welcomeLogoUpload" type="button">Upload</button>
+                <button class="btn" id="welcomeLogoRemove" type="button" hidden>Reset</button>
+                <input type="file" id="welcomeLogoFile" accept="image/png,image/jpeg,image/gif,image/webp" hidden>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-accentBrand">Accent color</label><p>Noctyl's main color: the glow behind new chats, switches and highlights. Also under Customization → Glow.</p></div>
+              <input type="color" id="s-accentBrand" data-setting="accent">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-assistantName">Assistant name</label><p>The message box says "Ask" followed by this name.</p></div>
+              <input type="text" id="s-assistantName" data-setting="assistantName" placeholder="Noctyl" maxlength="40">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-welcomeShow">Welcome heading</label><p>The line above the message box on a new chat.</p></div>
+              <label class="switch"><input type="checkbox" id="s-welcomeShow" data-setting="welcomeShow"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-welcomeText">Welcome text</label><p id="welcomeTextNote">What the heading says. {displayName} is replaced with your display name.</p></div>
+              <input type="text" id="s-welcomeText" data-setting="welcomeText" placeholder="Welcome back, {displayName}!" maxlength="80">
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset customization</label><p>Restore the default logo banner, assistant name, welcome heading, sidebar layout, search, window, HUD, and glow. Nothing else is changed.</p></div>
+              <button class="btn" type="button" data-action-btn="resetCustomization">Reset</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="sidebar-layout">
+            <h4 class="panel-sub">Layout</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-projectsEnabled">Projects</label><p>A Projects list above Chats: keep related chats together with shared instructions and a model. On a Noctyl server you can share a project with other people.</p></div>
+              <label class="switch"><input type="checkbox" id="s-projectsEnabled" data-setting="projectsEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-sidebarPosition">Sidebar position</label><p>A sidebar on the left or right, or a bar across the top or bottom of the window. In a bar, your chats open from a Chats button.</p></div>
+              <select id="s-sidebarPosition" data-setting="sidebarPosition">
+                <option value="left">Left sidebar</option>
+                <option value="right">Right sidebar</option>
+                <option value="top">Top bar</option>
+                <option value="bottom">Bottom bar</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-sidebarCollapse">Collapse animation</label><p>How it moves when you collapse it (Ctrl+B).</p></div>
+              <select id="s-sidebarCollapse" data-setting="sidebarCollapse">
+                <option value="edge">Slide to its edge</option>
+                <option value="up">Wipe up (bottom to top)</option>
+                <option value="down">Wipe down (top to bottom)</option>
+                <option value="fade">Fade</option>
+              </select>
+            </div>
+            <h4 class="panel-sub">Show</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-showLogo">Logo banner</label><p>The branding graphic at the top of the sidebar.</p></div>
+              <label class="switch"><input type="checkbox" id="s-showLogo" data-setting="showLogo"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-showQuickSkills">Quick Skills</label><p>Your pinned skills. They still work from the / menu in the message box.</p></div>
+              <label class="switch"><input type="checkbox" id="s-showQuickSkills" data-setting="showQuickSkills"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-showAvatar">Profile picture</label><p>Next to your name at the bottom.</p></div>
+              <label class="switch"><input type="checkbox" id="s-showAvatar" data-setting="showAvatar"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-showUserName">Display name</label><p>Your name at the bottom. Settings stays reachable either way.</p></div>
+              <label class="switch"><input type="checkbox" id="s-showUserName" data-setting="showUserName"><span></span></label>
+            </div>
+            <h4 class="panel-sub">Chats</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-chatGrouping">Organize chats</label><p>One list, or headings by when each chat was last used. Pinned chats always stay at the top.</p></div>
+              <select id="s-chatGrouping" data-setting="chatGrouping">
+                <option value="none">All together</option>
+                <option value="range">Last 7 days, last 30 days, then by month (2026-09)</option>
+                <option value="daily">Today, Yesterday, the 3 days before (Jan 1), then Older</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset customization</label><p>Restore the default logo banner, assistant name, welcome heading, sidebar layout, search, window, HUD, and glow. Nothing else is changed.</p></div>
+              <button class="btn" type="button" data-action-btn="resetCustomization">Reset</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="search-style">
+            <div class="field">
+              <div class="field-text"><label for="s-searchStyle">Search style</label><p>What Search chats (Ctrl+Shift+K) opens: a full page in place of the chat, or a floating search box over everything.</p></div>
+              <select id="s-searchStyle" data-setting="searchStyle">
+                <option value="page">Search page</option>
+                <option value="popup">Floating search box</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-searchPlacement">Search button</label><p>A full button under New chat, or just a magnifying glass next to the collapse button at the top of the sidebar.</p></div>
+              <select id="s-searchPlacement" data-setting="searchPlacement">
+                <option value="sidebar">Button in the sidebar</option>
+                <option value="header">Icon at the top</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset customization</label><p>Restore the default logo banner, assistant name, welcome heading, sidebar layout, search, window, HUD, and glow. Nothing else is changed.</p></div>
+              <button class="btn" type="button" data-action-btn="resetCustomization">Reset</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="window-hud">
+            <h4 class="panel-sub">Appearance</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-themeMode">Dark / Light mode</label><p>System default follows your computer's setting and switches with it. The logo, window buttons and acrylic follow too; the HUD bar always stays dark glass.</p></div>
+              <select id="s-themeMode" data-setting="themeMode">
+                <option value="system">System default</option>
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <h4 class="panel-sub">HUD mode</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-hudOpacity">Bar opacity</label><p>The floating chat bar (Ctrl+Shift+H) and the conversation under it. Left: more see-through. Right: solid. In the HUD, Ctrl+Shift+↑ / ↓ makes it more see-through / more solid.</p></div>
+              <input type="range" id="s-hudOpacity" data-setting="hudOpacity" min="30" max="100" step="1">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-hudTint">Bar tint</label><p>Acrylic black, or a dark shade of your glow color (the original look).</p></div>
+              <select id="s-hudTint" data-setting="hudTint">
+                <option value="black">Acrylic black</option>
+                <option value="accent">Glow color</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-hudEdge">Bar edge</label><p>A faint light outline, or the glow color (brighter while the HUD is focused).</p></div>
+              <select id="s-hudEdge" data-setting="hudEdge">
+                <option value="subtle">Subtle</option>
+                <option value="accent">Glow color</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset customization</label><p>Restore the default logo banner, assistant name, welcome heading, sidebar layout, search, window, HUD, and glow. Nothing else is changed.</p></div>
+              <button class="btn" type="button" data-action-btn="resetCustomization">Reset</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="colors">
+            <div class="field field-col">
+              <div class="field-text"><label>Themes</label><p>Noctyl's own look, or a theme you've installed. A theme brings its own light or dark mode. Import a VS Code color theme (a <code>.json</code> theme file or a <code>.vsix</code> extension), or find one below.</p></div>
+              <ul class="mcp-list" id="themeList"></ul>
+              <div class="btn-row">
+                <button class="btn" id="themeImport" type="button">Import a VS Code theme…</button>
+                <input type="file" id="themeFile" accept=".json,.jsonc,.vsix,application/json" hidden>
+              </div>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Find VS Code themes</label><p>Searches <a href="https://open-vsx.org" target="_blank" rel="noopener noreferrer">Open VSX</a>, the open registry of VS Code extensions. Installing reads only the theme's colors.</p></div>
+              <form class="skill-toolbar" id="themeSearch" autocomplete="off">
+                <input type="search" id="themeQuery" placeholder="Dracula, One Dark, Catppuccin, Solarized…" aria-label="Search themes" spellcheck="false">
+                <button class="btn" type="submit">Search</button>
+              </form>
+              <ul class="mcp-list" id="themeResults"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Colors</label><p>The ten colors everything is made from. Change any of them; your colors go on top of the theme in use.</p></div>
+              <div class="color-grid" id="colorList"></div>
+              <div class="btn-row"><button class="btn" id="colorsReset" type="button">Reset my colors</button></div>
+            </div>
+          </div>
+          <div class="panel" data-panel="theme">
+            <div class="field">
+              <div class="field-text"><label for="s-glowEnabled">Show glow</label><p>The colored light behind the chat screen. Your settings below are kept while it's off.</p></div>
+              <label class="switch"><input type="checkbox" id="s-glowEnabled" data-setting="glowEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-accent">Color</label><p>The glow's color. Switches and highlights across Noctyl use it too, so it stays editable with the glow off.</p></div>
+              <input type="color" id="s-accent" data-setting="accent">
+            </div>
+            <div class="glow-opts" id="glowOpts">
+              <h4 class="panel-sub">Style</h4>
+              <div class="field">
+                <div class="field-text"><label for="s-glowStyle">Shape</label><p>Where the light comes from.</p></div>
+                <select id="s-glowStyle" data-setting="glowStyle">
+                  <option value="blob">Centre blob</option>
+                  <option value="bottom">Rising from the bottom</option>
+                  <option value="top">Falling from the top</option>
+                  <option value="edges">Around the edges</option>
+                  <option value="corners">Opposite corners</option>
+                  <option value="aurora">Aurora</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="field-text"><label for="s-glowDual">Second color</label><p>Blend in another color (the outer part, the second corner, or the far side of the aurora).</p></div>
+                <div class="inline-controls">
+                  <input type="color" id="s-glowColor2" data-setting="glowColor2" aria-label="Second glow color">
+                  <label class="switch"><input type="checkbox" id="s-glowDual" data-setting="glowDual"><span></span></label>
+                </div>
+              </div>
+              <h4 class="panel-sub">Look</h4>
+              <div class="field">
+                <div class="field-text"><label for="s-glow">Intensity</label><p>How strong the light is.</p></div>
+                <input type="range" id="s-glow" data-setting="glow" min="5" max="100" step="1">
+              </div>
+              <div class="field">
+                <div class="field-text"><label for="s-glowSize">Size</label><p>How far it spreads.</p></div>
+                <input type="range" id="s-glowSize" data-setting="glowSize" min="40" max="160" step="1">
+              </div>
+              <div class="field">
+                <div class="field-text"><label for="s-glowSoftness">Softness</label><p>Left: a crisper shape. Right: a soft haze.</p></div>
+                <input type="range" id="s-glowSoftness" data-setting="glowSoftness" min="0" max="100" step="1">
+              </div>
+              <h4 class="panel-sub">Motion</h4>
+              <div class="field">
+                <div class="field-text"><label for="s-glowAnimation">Animation</label><p>Slow and subtle. Off when your system asks for reduced motion.</p></div>
+                <select id="s-glowAnimation" data-setting="glowAnimation">
+                  <option value="none">None</option>
+                  <option value="pulse">Pulse (breathes in and out)</option>
+                  <option value="drift">Drift (moves slowly around)</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="field-text"><label for="s-glowInChats">Keep in conversations</label><p>A fainter glow stays behind your messages instead of only on the empty screen.</p></div>
+                <label class="switch"><input type="checkbox" id="s-glowInChats" data-setting="glowInChats"><span></span></label>
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset customization</label><p>Restore the default logo banner, assistant name, welcome heading, sidebar layout, search, window, HUD, and glow. Nothing else is changed.</p></div>
+              <button class="btn" type="button" data-action-btn="resetCustomization">Reset</button>
+            </div>
+          </div>
+
+          <!-- Model -->
+          <div class="panel" data-panel="model-defaults">
+            <div class="field">
+              <div class="field-text"><label for="s-model">Default model</label><p>Used for new chats. Models from every connected provider are listed.</p></div>
+              <select id="s-model" data-setting="defaultModel"></select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-temp">Temperature <output id="o-temp"></output></label><p>Lower is more focused, higher is more creative. Anthropic caps this at 1.</p></div>
+              <input type="range" id="s-temp" data-setting="temperature" min="0" max="2" step="0.05">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-maxTokens">Max reply length</label><p>In tokens. Used by providers that require a limit (Anthropic).</p></div>
+              <input type="number" id="s-maxTokens" data-setting="maxTokens" min="256" max="200000" step="256">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-ctx">Context window</label><p>Ollama <code>num_ctx</code>, in tokens.</p></div>
+              <input type="number" id="s-ctx" data-setting="numCtx" min="512" max="1048576" step="512">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-keep">Keep alive</label><p>How long Ollama keeps the model loaded, e.g. <code>5m</code>.</p></div>
+              <input type="text" id="s-keep" data-setting="keepAlive" placeholder="5m">
+            </div>
+          </div>
+          <div class="panel" data-panel="system-prompt">
+            <div class="field field-col">
+              <div class="field-text"><label for="s-system">System prompt</label><p>Sent at the start of every conversation, whichever provider you use.</p></div>
+              <textarea id="s-system" data-setting="systemPrompt" rows="8" placeholder="You are Noctyl, a helpful assistant."></textarea>
+            </div>
+          </div>
+
+          <!-- Providers -->
+          <div class="panel" data-panel="accounts">
+            <div class="panel-intro">
+              <div>
+                <h3>Connect an account</h3>
+                <p>Sign in with a subscription instead of pasting a key.</p>
+              </div>
+              <button class="text-link" type="button" data-goto="api-keys">Have an API key instead?</button>
+            </div>
+            <ul class="acct-list" id="accountList"></ul>
+          </div>
+          <div class="panel" data-panel="api-keys">
+            <button class="link-card" type="button" data-goto="custom-endpoints">
+              <span><b>Provider not listed?</b><small>Add a custom provider: any OpenAI- or Anthropic-compatible API, from a niche host to vLLM, LM Studio or LocalAI</small></span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+            </button>
+            <label class="key-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+              <input type="text" id="keySearch" placeholder="Search providers…" autocomplete="off" spellcheck="false" aria-label="Search providers">
+            </label>
+            <ul class="key-list" id="keyList"></ul>
+            <div class="note">Keys are saved with your other Noctyl data on this device and are only sent to the provider they belong to.<span class="web-only"> Some providers don't accept requests from web pages; use the Noctyl desktop app for those.</span></div>
+          </div>
+          <div class="panel" data-panel="custom-endpoints">
+            <!-- Noctyl server: providers an admin shared with you (you use them; their keys stay on the server) -->
+            <div class="field field-col server-only" id="sharedWithYou" hidden>
+              <div class="field-text"><label>Shared with you</label><p>An admin of this server shares these providers. Their models are in the model picker; the keys stay on the server, so they never reach your browser.</p></div>
+              <ul class="mcp-list" id="sharedList"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Custom providers</label><p>Use any API that isn't in the list: a niche host, a company gateway, or a server on your network. It needs to speak the OpenAI (<code>/chat/completions</code>) or Anthropic (<code>/messages</code>) format, which most do. Its models show up in the model picker with the others.</p></div>
+              <ul class="mcp-list" id="endpointList"></ul>
+              <form class="provider-form" id="endpointAdd" autocomplete="off">
+                <div class="pf-title" id="epFormTitle">Add a provider</div>
+                <div class="pf-grid">
+                  <label class="pf-field"><span>Name</span><input type="text" id="epName" placeholder="My provider" maxlength="40"></label>
+                  <label class="pf-field"><span>API format</span>
+                    <select id="epFormat">
+                      <option value="openai">OpenAI-compatible</option>
+                      <option value="anthropic">Anthropic-compatible</option>
+                    </select>
+                  </label>
+                  <label class="pf-field pf-wide"><span>Base URL</span><input type="text" id="epUrl" placeholder="https://api.example.com/v1" spellcheck="false"><small>The part before <code id="epPathHint">/chat/completions</code>, usually ending in <code>/v1</code>.</small></label>
+                  <label class="pf-field pf-wide"><span>API key</span><input type="password" id="epKey" placeholder="Optional" spellcheck="false"></label>
+                </div>
+                <details class="pf-more" id="epMore">
+                  <summary>Advanced</summary>
+                  <div class="pf-grid">
+                    <label class="pf-field pf-wide"><span>Key header</span><input type="text" id="epAuthHeader" placeholder="Default: Authorization: Bearer <key>" spellcheck="false" maxlength="64"><small>If the provider wants the key in another header, like <code>api-key</code> or <code>X-API-Key</code>, name it here. The key is sent as it is.</small></label>
+                    <label class="pf-field pf-wide"><span>Extra headers</span><textarea id="epHeaders" rows="3" placeholder="X-Organization: my-team" spellcheck="false"></textarea><small>One per line, as <code>Name: value</code>. They're sent with every request to this provider and saved like a key.</small></label>
+                    <label class="pf-field pf-wide"><span>Models</span><textarea id="epModels" rows="3" placeholder="model-one, model-two" spellcheck="false"></textarea><small>Leave empty to get the list from the provider (<code>GET /models</code>). Fill it in if the provider has no list, or to show only these.</small></label>
+                  </div>
+                </details>
+                <div class="pf-actions">
+                  <button class="btn" type="button" id="epCancel" hidden>Cancel</button>
+                  <button class="btn btn-primary" type="submit" id="epSubmit">Add provider</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="panel" data-panel="local-models">
+            <h3 class="panel-section">At startup</h3>
+            <div class="field">
+              <div class="field-text"><label for="s-rt-auto">Make sure a local model runtime is running</label><p>When Noctyl opens, start Ollama or llama.cpp if it isn't running. You can type while it starts.</p></div>
+              <label class="switch"><input type="checkbox" id="s-rt-auto" data-setting="runtimeAutostart"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-rt-prefer">Use</label><p>Which one to start. Automatic picks llama.cpp when it's turned on below, otherwise Ollama if it's installed.</p></div>
+              <select id="s-rt-prefer" data-setting="runtimePrefer">
+                <option value="auto">Automatic</option>
+                <option value="ollama">Ollama</option>
+                <option value="llamacpp">llama.cpp</option>
+              </select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-rt-install">Install llama.cpp if needed</label><p>If neither Ollama nor llama.cpp is on this computer, download the official llama.cpp build (from github.com/ggml-org/llama.cpp) into Noctyl's data folder.</p></div>
+              <label class="switch"><input type="checkbox" id="s-rt-install" data-setting="runtimeInstall"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Status</label><p id="rtStatusText">Checking…</p></div>
+              <div class="btn-row">
+                <button class="btn" id="rtInstallLlama" type="button">Install llama.cpp</button>
+                <button class="btn" id="rtCheckNow" type="button">Check now</button>
+              </div>
+            </div>
+
+            <h3 class="panel-section">Ollama</h3>
+            <div class="note" id="ollamaOffNote" hidden>Ollama isn't used while llama.cpp is on. Turn llama.cpp off below to use Ollama again.</div>
+            <div id="ollamaSection">
+              <div class="field">
+                <div class="field-text"><label for="s-url">Ollama URL</label><p>Base URL of your Ollama server.</p></div>
+                <input type="text" id="s-url" data-setting="ollamaUrl" placeholder="http://localhost:11434" spellcheck="false">
+              </div>
+              <div class="field">
+                <div class="field-text"><label>Connection status</label><p id="connStatusText">Not checked yet.</p></div>
+                <div class="btn-row">
+                  <span class="dot" id="connDot"></span>
+                  <button class="btn" id="testConn" type="button">Test connection</button>
+                </div>
+              </div>
+              <div class="note web-only">Browsers block cross-origin requests to Ollama unless it allows this page's origin. Start Ollama with <code>OLLAMA_ORIGINS</code> set accordingly, or use the Noctyl desktop app, which doesn't need it.</div>
+            </div>
+
+            <h3 class="panel-section">llama.cpp</h3>
+            <div class="field">
+              <div class="field-text"><label for="s-llama">Use llama.cpp</label><p>Chat with models served by <code>llama-server</code>. While this is on, Ollama isn't used.</p></div>
+              <label class="switch"><input type="checkbox" id="s-llama" data-setting="llamaCppEnabled"><span></span></label>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>GGUF models</label><p>Model files on this computer. Noctyl runs them with its own llama-server, loading the one you pick when you chat.</p></div>
+              <ul class="mcp-list" id="ggufList"></ul>
+              <div><button class="btn" id="ggufAdd" type="button">Add GGUF file…</button></div>
+            </div>
+            <div class="field field-col desktop-only">
+              <div class="field-text"><label>Download from Hugging Face</label><p>Search public GGUF models and download one; no account needed. Downloads go to the models folder in your Noctyl folder. Files you add yourself (above) stay where they are.</p></div>
+              <form class="skill-toolbar" id="hfSearchForm" autocomplete="off">
+                <input type="search" id="hfQuery" placeholder="e.g. qwen 2.5 7b instruct, llama 3.2 3b, gemma" spellcheck="false" aria-label="Search Hugging Face">
+                <button class="btn" type="submit">Search</button>
+              </form>
+              <ul class="mcp-list hf-list" id="hfResults"></ul>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>llama.cpp servers</label><p>Each <code>llama-server</code> you add here shows its models in the model picker.</p></div>
+              <ul class="mcp-list" id="llamaList"></ul>
+              <form class="mcp-add" id="llamaAdd" autocomplete="off">
+                <input type="text" id="llamaName" placeholder="Name (optional)" maxlength="40" aria-label="Model name">
+                <input type="text" id="llamaUrl" placeholder="http://localhost:8081" spellcheck="false" aria-label="Server URL">
+                <input type="password" id="llamaKey" placeholder="API key (optional)" aria-label="API key">
+                <button class="btn" type="submit">Add model</button>
+              </form>
+            </div>
+            <div class="note">One <code>llama-server</code> serves one model. To add another, start it on a free port, e.g. <code>llama-server -m qwen.gguf --port 8081 --jinja</code>, then add <code>http://localhost:8081</code> above. A server running in router mode lists all of its models at once. <code>--jinja</code> enables tool calling for MCP.</div>
+
+            <h3 class="panel-section">All providers</h3>
+            <div class="field">
+              <div class="field-text"><label>Models</label><p>Reload the model list from every connected provider.</p></div>
+              <button class="btn" id="refreshModels" type="button">Refresh models</button>
+            </div>
+          </div>
+
+          <!-- Tools -->
+          <div class="panel" data-panel="mcp">
+            <div class="field">
+              <div class="field-text"><label for="s-mcp">Use MCP tools</label><p>Let the model call tools from the servers below. Needs a model that supports tool calling (e.g. Llama 3.1+, Qwen 2.5+).</p></div>
+              <label class="switch"><input type="checkbox" id="s-mcp" data-setting="mcpEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-mcp-confirm">Ask before running a tool</label><p>Show Allow / Deny in the chat each time the model wants to use a tool.</p></div>
+              <label class="switch"><input type="checkbox" id="s-mcp-confirm" data-setting="mcpConfirm"><span></span></label>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Servers</label><p>MCP servers reachable over HTTP (Streamable HTTP transport).</p></div>
+              <ul class="mcp-list" id="mcpList"></ul>
+              <form class="mcp-add" id="mcpAdd" autocomplete="off">
+                <input type="text" id="mcpName" placeholder="Name" maxlength="40" aria-label="Server name">
+                <input type="text" id="mcpUrl" placeholder="https://example.com/mcp" spellcheck="false" aria-label="Server URL">
+                <input type="password" id="mcpToken" placeholder="Bearer token (optional)" aria-label="Bearer token">
+                <button class="btn" type="submit">Add server</button>
+              </form>
+            </div>
+            <div class="note">Noctyl connects to MCP servers over HTTP. Local stdio servers need a bridge that exposes them over HTTP (for example <code>supergateway</code> or <code>mcp-proxy</code>).<span class="web-only"> In a browser, the server must also allow this page's origin (CORS) and expose the <code>Mcp-Session-Id</code> header; the desktop app doesn't need that.</span> Tokens are saved with your other Noctyl data on this device, and tool results are sent to your model.</div>
+          </div>
+
+          <div class="panel" data-panel="web-search">
+            <div class="field">
+              <div class="field-text"><label for="s-web">Use web search</label><p>Let the model search the web and read pages when it needs current information. Agents have their own switch for this.</p></div>
+              <label class="switch"><input type="checkbox" id="s-web" data-setting="webSearchEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-web-engine">Search engine</label><p>Where searches are sent.</p></div>
+              <select id="s-web-engine" data-setting="webSearchProvider">
+                <option value="duckduckgo">DuckDuckGo (no key)</option>
+                <option value="searxng">SearXNG (your own instance)</option>
+                <option value="brave">Brave Search API</option>
+                <option value="tavily">Tavily</option>
+              </select>
+            </div>
+            <div class="field" data-engine="searxng" hidden>
+              <div class="field-text"><label for="s-searxng">SearXNG URL</label><p>Your instance, with the JSON format turned on in its settings.yml.</p></div>
+              <input type="text" id="s-searxng" data-setting="searxngUrl" placeholder="http://localhost:8888" spellcheck="false">
+            </div>
+            <div class="field" data-engine="brave" hidden>
+              <div class="field-text"><label for="s-brave">Brave Search API key</label><p>From <a href="https://api-dashboard.search.brave.com" target="_blank" rel="noopener noreferrer">api-dashboard.search.brave.com</a>.</p></div>
+              <input type="password" id="s-brave" data-setting="braveKey" placeholder="Paste key" autocomplete="off">
+            </div>
+            <div class="field" data-engine="tavily" hidden>
+              <div class="field-text"><label for="s-tavily">Tavily API key</label><p>From <a href="https://app.tavily.com" target="_blank" rel="noopener noreferrer">app.tavily.com</a>.</p></div>
+              <input type="password" id="s-tavily" data-setting="tavilyKey" placeholder="tvly-…" autocomplete="off">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-web-n">Results per query</label><p>How many results each search query returns (1–10). The model usually searches 2–4 queries at once.</p></div>
+              <input type="number" id="s-web-n" data-setting="webSearchResults" min="1" max="10">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-web-pages">Pages to read</label><p>Like DeepSeek: Noctyl opens this many of the best results in parallel and gives the model the passages that answer the question, with numbered sources to cite. 0 = search snippets only (fastest).</p></div>
+              <input type="number" id="s-web-pages" data-setting="webSearchPages" min="0" max="20">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-web-confirm">Ask before searching</label><p>Show Allow / Deny in the chat before each search or page the model opens.</p></div>
+              <label class="switch"><input type="checkbox" id="s-web-confirm" data-setting="webSearchConfirm"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="webTestQuery">Test</label><p id="webTestStatus">Run a search with the engine above.</p></div>
+              <div class="btn-row">
+                <span class="dot" id="webTestDot"></span>
+                <input type="text" id="webTestQuery" placeholder="Search for…" spellcheck="false" aria-label="Test search">
+                <button class="btn" id="webTest" type="button">Search</button>
+              </div>
+            </div>
+            <div class="note">Searches send only the query to the engine you chose. Pages the model opens are fetched from this computer, and Noctyl never opens addresses on this computer or your local network for it.<span class="web-only"> In a browser, DuckDuckGo, Brave and Tavily refuse requests from web pages; use the desktop app, or a SearXNG instance that allows this page (CORS).</span></div>
+          </div>
+
+          <div class="panel" data-panel="images">
+            <div class="field">
+              <div class="field-text"><label for="s-imggen">Image generation</label><p>Let the model make images with your <a href="https://github.com/comfyanonymous/ComfyUI" target="_blank" rel="noopener noreferrer">ComfyUI</a> server, and type <code>/imagine</code> to make one yourself. Images show up in the chat and are saved with it.</p></div>
+              <label class="switch"><input type="checkbox" id="s-imggen" data-setting="imageGenEnabled"><span></span></label>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>ComfyUI servers</label><p>Add each server (or node) you run. The selected one is used.<span class="web-only"> In the browser, start ComfyUI with <code>--enable-cors-header</code>.</span></p></div>
+              <ul class="mcp-list" id="comfyList"></ul>
+              <form class="mcp-add" id="comfyAdd" autocomplete="off">
+                <input type="text" id="comfyName" placeholder="Name (optional)" maxlength="40" aria-label="Server name">
+                <input type="text" id="comfyUrl" placeholder="http://127.0.0.1:8188, or just the port" spellcheck="false" aria-label="ComfyUI URL">
+                <button class="btn" type="submit">Add server</button>
+              </form>
+            </div>
+            <h4 class="panel-sub">Built-in workflow</h4>
+            <div class="field">
+              <div class="field-text"><label for="s-comfy-ckpt">Checkpoint</label><p>The model ComfyUI draws with. <button class="text-link" type="button" id="comfyRefresh">Refresh list</button></p></div>
+              <select id="s-comfy-ckpt" data-setting="comfyCheckpoint"><option value="">Add a server first</option></select>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Size</label><p>Default width and height in pixels. The model can ask for another size.</p></div>
+              <div class="inline-controls">
+                <input type="number" id="s-comfy-w" data-setting="comfyWidth" min="256" max="2048" step="64" aria-label="Width">
+                <span class="dim">×</span>
+                <input type="number" id="s-comfy-h" data-setting="comfyHeight" min="256" max="2048" step="64" aria-label="Height">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-comfy-steps">Steps and CFG</label><p>More steps take longer; CFG is how closely it follows the prompt.</p></div>
+              <div class="inline-controls">
+                <input type="number" id="s-comfy-steps" data-setting="comfySteps" min="1" max="150" aria-label="Steps">
+                <input type="number" id="s-comfy-cfg" data-setting="comfyCfg" min="0" max="30" step="0.5" aria-label="CFG">
+              </div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-comfy-sampler">Sampler</label></div>
+              <div class="inline-controls">
+                <select id="s-comfy-sampler" data-setting="comfySampler"><option value="euler">euler</option></select>
+                <select id="s-comfy-sched" data-setting="comfyScheduler" aria-label="Scheduler"><option value="normal">normal</option></select>
+              </div>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label for="s-comfy-neg">Negative prompt</label><p>What to avoid, unless the model gives its own.</p></div>
+              <input type="text" id="s-comfy-neg" data-setting="comfyNegative" maxlength="2000">
+            </div>
+            <h4 class="panel-sub">Your own workflow</h4>
+            <div class="field field-col">
+              <div class="field-text"><label for="s-comfy-wf">Workflow (API format)</label><p>Optional. In ComfyUI, use <b>Save (API)</b> and paste the file here. Put <code>{{prompt}}</code> where the prompt goes, and if you like <code>{{negative}}</code>, <code>{{seed}}</code>, <code>{{width}}</code>, <code>{{height}}</code>. Empty uses the built-in workflow above.</p></div>
+              <textarea id="s-comfy-wf" data-setting="comfyWorkflow" rows="6" spellcheck="false" placeholder='{ "6": { "class_type": "CLIPTextEncode", "inputs": { "text": "{{prompt}}", … } }, … }'></textarea>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-comfy-timeout">Wait up to</label><p>Seconds for one generation before giving up.</p></div>
+              <input type="number" id="s-comfy-timeout" data-setting="comfyTimeout" min="30" max="3600">
+            </div>
+          </div>
+          <div class="panel" data-panel="commands">
+            <div class="field">
+              <div class="field-text"><label for="s-cmd">Let Noctyl run commands</label><p id="cmdWhere" data-desktop="The model can ask to run a command on this computer. Each command is shown to you first and only runs if you press Allow. Turning this on asks you to confirm.">The model can ask to run a command on this computer. Each command is shown to you first and only runs if you press Allow. Turning this on asks you to confirm.</p></div>
+              <label class="switch"><input type="checkbox" id="s-cmd"><span></span></label>
+            </div>
+            <div class="field" data-cmd-only>
+              <div class="field-text"><label for="s-cmd-shell">Shell</label><p>What commands run in.</p></div>
+              <select id="s-cmd-shell"></select>
+            </div>
+            <div class="field" data-cmd-only>
+              <div class="field-text"><label>Working folder</label><p id="cmdCwdText">Your home folder</p></div>
+              <div class="btn-row">
+                <button class="btn" id="cmdCwdReset" type="button" hidden>Use home folder</button>
+                <button class="btn" id="cmdCwdPick" type="button">Choose…</button>
+              </div>
+            </div>
+            <div class="field" data-cmd-only>
+              <div class="field-text"><label for="s-cmd-timeout">Time limit</label><p>Seconds before a command is stopped (1–600).</p></div>
+              <input type="number" id="s-cmd-timeout" data-setting="commandTimeout" min="1" max="600">
+            </div>
+            <div class="note">Commands run as you, with your permissions, and can change or delete files. Noctyl flags risky commands (deleting files, changing system settings, running downloaded code, admin rights…); those always ask, even if you chose “Always allow in this chat” for other commands. Press Stop at any time to end a running command. Agents only get commands if their settings allow it.<span class="web-only"> Commands only run in the Noctyl desktop app.</span><span id="cmdWhereNote" hidden> On a Noctyl server, commands run on the server's computer as the account the server runs as, every command is written to the server's log, and only admins can use them.</span></div>
+          </div>
+
+          <!-- Skills & Agents -->
+          <div class="panel" data-panel="skill-docs">
+            <div class="field">
+              <div class="field-text"><label for="s-skills-on">Use skills</label><p>Skills are step-by-step know-how for tasks you do more than once: when to use it, the steps, what can go wrong, and how to check it worked. Noctyl shows the model a short list and it opens the one that fits.</p></div>
+              <label class="switch"><input type="checkbox" id="s-skills-on" data-setting="skillsEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-skill-learn">Learn new skills</label><p>After a task that took several steps and worked, Noctyl offers to save how it did it, and notes fixes when a skill goes wrong. Type <code>/save-skill</code> to save one yourself. <b>Ask me first</b> shows each skill so you can edit or skip it. <b>Automatically</b> saves without asking, except skills with files or ones written after reading web pages or MCP tools.</p></div>
+              <select id="s-skill-learn" data-setting="skillLearning">
+                <option value="ask">Ask me first</option>
+                <option value="auto">Automatically</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Your skills</label>
+                <p class="desktop-only">Each skill is a folder with a <code>SKILL.md</code> inside, in the <code>skills</code> folder of your Noctyl folder, or just a <code>.md</code> file there. Add or edit files and they show up here.</p>
+                <p class="web-only">Kept in this browser. The desktop app keeps skills as files you can edit.</p></div>
+              <div class="skill-toolbar">
+                <input type="search" id="skillDocSearch" placeholder="Search skills" aria-label="Search skills" spellcheck="false">
+                <button class="btn desktop-only" id="skillDocsFolder" type="button" title="Open the skills folder">Open folder</button>
+                <button class="btn" id="skillDocNew" type="button">New skill</button>
+              </div>
+              <div id="skillDocEditor" hidden></div>
+              <ul class="mcp-list" id="skillDocList"></ul>
+            </div>
+          </div>
+          <div class="panel" data-panel="skills">
+            <div class="field field-col">
+              <div class="field-text"><label>Quick skills</label><p>Saved prompts you run yourself. Type <code>/</code> in the chat bar to use any of them, or <code>/command your text</code> to run one in one go. Pinned skills show in the sidebar. Drag to reorder, or drop a skill on another category to move it.</p></div>
+              <div class="skill-toolbar">
+                <input type="search" id="skillSearch" placeholder="Search skills" aria-label="Search skills" spellcheck="false">
+                <button class="btn desktop-only" id="skillsFolder" type="button" title="Each skill is a .md file in your Noctyl folder; edit or add files there">Open folder</button>
+                <button class="btn" id="skillNew" type="button">New skill</button>
+              </div>
+              <div id="skillEditor" hidden></div>
+              <div id="skillLib" class="skill-lib"></div>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Default skills</label><p>Bring back the built-in skills. Skills you made are kept.</p></div>
+              <button class="btn" id="skillsReset" type="button">Restore defaults</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="agents">
+            <div class="field">
+              <div class="field-text"><label for="s-sub">Sub-agents</label><p>Let the model split a big request into separate tasks and hand each to a sub-agent that works in parallel and reports back. Sub-agents use the same model and their own tools, still ask before commands, and can't start more sub-agents.</p></div>
+              <label class="switch"><input type="checkbox" id="s-sub" data-setting="subagentsEnabled"><span></span></label>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-sub-max">Most sub-agents per request</label><p>The largest number the model can start at once (1–12).</p></div>
+              <input type="number" id="s-sub-max" data-setting="subagentsMax" min="1" max="12">
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-sub-par">Run at the same time</label><p>How many work in parallel; the rest wait their turn. A local model usually answers one at a time, so 1–2 is plenty; online providers can take more.</p></div>
+              <input type="number" id="s-sub-par" data-setting="subagentsParallel" min="1" max="12">
+            </div>
+            <div class="field field-col">
+              <div class="field-text"><label>Agents</label><p>An agent has its own instructions, can use its own model, and decides which tools it may use (web search, MCP) and for how many steps. Pick one with <code>@</code> in the chat bar or from the + menu; each chat remembers its agent.</p></div>
+              <div class="skill-toolbar"><span></span><span class="btn-row"><button class="btn desktop-only" id="agentsFolder" type="button" title="Each agent is a .md file in your Noctyl folder">Open folder</button><button class="btn" id="agentNew" type="button">New agent</button></span></div>
+              <div id="agentEditor" hidden></div>
+              <ul class="mcp-list" id="agentList"></ul>
+            </div>
+          </div>
+
+          <!-- Knowledge -->
+          <div class="panel" data-panel="knowledge">
+            <div class="note web-only">Projects need the Noctyl desktop app: it reads your folders and keeps their index on your computer.</div>
+            <div class="field desktop-only">
+              <div class="field-text"><label for="s-rag">Use project knowledge</label><p>Bring your projects into Noctyl: it indexes their files with your embedding server and finds the parts that answer your question (local RAG). The index stays on this computer.</p></div>
+              <label class="switch"><input type="checkbox" id="s-rag" data-setting="ragEnabled"><span></span></label>
+            </div>
+            <h4 class="panel-sub desktop-only">Embedding server</h4>
+            <div class="field field-col desktop-only">
+              <div class="field-text"><label>Server and model</label><p>Any OpenAI-compatible <code>/embeddings</code> API: Ollama (<code>http://localhost:11434/v1</code>, model <code>nomic-embed-text</code>), a llama-server started with <code>--embeddings</code>, LM Studio, vLLM. Excerpts of your files are sent to it, so keep it on your own computer or network for private projects.</p></div>
+              <div class="pf-grid">
+                <label class="pf-field pf-wide"><span>URL</span><input type="text" id="s-rag-url" data-setting="ragEmbedUrl" spellcheck="false" placeholder="http://localhost:11434/v1"></label>
+                <label class="pf-field"><span>Model</span><input type="text" id="s-rag-model" data-setting="ragEmbedModel" spellcheck="false" placeholder="nomic-embed-text"></label>
+                <label class="pf-field"><span>API key</span><input type="password" id="s-rag-key" data-setting="ragEmbedKey" spellcheck="false" placeholder="Optional"></label>
+              </div>
+              <div class="btn-row"><button class="btn" id="ragTest" type="button">Test</button><span class="dim" id="ragTestOut"></span></div>
+            </div>
+            <h4 class="panel-sub desktop-only">How it's used</h4>
+            <div class="field desktop-only">
+              <div class="field-text"><label for="s-rag-mode">Search</label><p><b>For every message</b> finds the best excerpts and gives them to the model, so it works with any model. <b>When the model asks</b> only lets models that use tools search when they need to.</p></div>
+              <select id="s-rag-mode" data-setting="ragMode">
+                <option value="auto">For every message</option>
+                <option value="tool">When the model asks</option>
+              </select>
+            </div>
+            <div class="field desktop-only">
+              <div class="field-text"><label for="s-rag-k">Excerpts per search</label><p>More gives the model more to go on, and uses more of its context.</p></div>
+              <input type="number" id="s-rag-k" data-setting="ragTopK" min="1" max="12">
+            </div>
+            <div class="field field-col desktop-only">
+              <div class="field-text"><label>Projects</label><p><b>Every chat</b> projects are searched in all chats. <b>Chats I add it to</b> projects only in chats where you turn them on (+ menu → Projects, or <code>/projects</code>). Re-index after big changes; only changed files are read again.</p></div>
+              <ul class="mcp-list" id="ragList"></ul>
+              <form class="mcp-add" id="ragAdd" autocomplete="off">
+                <input type="text" id="ragName" placeholder="Project name" maxlength="60" aria-label="Project name">
+                <button class="btn" type="submit">Add a folder…</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Data & Privacy -->
+          <div class="panel" data-panel="storage">
+            <div class="field desktop-only">
+              <div class="field-text"><label>Noctyl folder</label><p>Where your skills, agents, downloaded models and llama.cpp are kept, so they last. Conversations stay inside Noctyl. <span id="appDirText">…</span></p></div>
+              <div class="btn-row">
+                <button class="btn" id="appDirOpen" type="button">Open</button>
+                <button class="btn" id="appDirChange" type="button">Change…</button>
+              </div>
+            </div>
+            <div class="note privacy-note">
+              <p><b>What's saved, and where.</b>
+                <span class="desktop-only">Your settings, API keys, MCP tokens, chats and attached images are kept on this computer, in Noctyl's data folder (<code>%APPDATA%\Noctyl</code> on Windows, <code>~/Library/Application Support/Noctyl</code> on macOS, <code>~/.config/Noctyl</code> on Linux). Skills, agents and downloaded models are in the Noctyl folder above.</span>
+                <span class="web-only">Your settings, API keys, MCP tokens and chats are kept in this browser's local storage (<code>noctyl.v2</code>), and attached images in its IndexedDB (<code>noctyl-images</code>), on this device only. The desktop app keeps its own, separate data.</span>
+                <span class="server-only">Your settings, API keys, MCP tokens, chats and images are kept on this Noctyl server, encrypted with a key that only your password or recovery code unlocks, so nobody else on the server (its admin included) can read them. Your API keys never come back to this browser: the page only has stand-ins, and the server adds the real key to a request only when it goes to the address that key belongs to.</span>
+                <span class="desktop-only">Keys and tokens are stored as they are, not encrypted, so anyone who can sign in to this computer account could read them.</span><span class="web-only">Keys and tokens are stored as they are, not encrypted, so anyone who can use this browser profile could read them.</span></p>
+              <p><b>What leaves this device.</b> Noctyl has no analytics, telemetry or crash reports<span class="server-only">, and every request goes out through this server</span>. The only things sent anywhere are:</p>
+              <ul>
+                <li>Your messages and attachments, to the provider of the model you pick. Local models (Ollama, llama.cpp) stay on this computer.</li>
+                <li>With web search on, your search queries to the search engine you chose, and requests for the pages the model reads.</li>
+                <li>With MCP tools on, a tool's inputs to the server that provides it.</li>
+                <li>Model searches and downloads, to Hugging Face; installing llama.cpp downloads it from GitHub.</li>
+              </ul>
+              <p>Dictation is transcribed on this device; your voice is never sent anywhere.</p>
+            </div>
+            <div class="field">
+              <div class="field-text"><label for="s-history">Save chat history</label><p>Off: chats last until you close Noctyl<span class="web-only"> or this tab</span>, and saved history is erased.</p></div>
+              <label class="switch"><input type="checkbox" id="s-history" data-setting="saveHistory"><span></span></label>
+            </div>
+          </div>
+          <div class="panel" data-panel="chat-data">
+            <div class="field">
+              <div class="field-text"><label>Export chats</label><p>Download every chat as a JSON file.</p></div>
+              <button class="btn" id="exportAll" type="button">Export</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Import chats</label><p>Merge chats from a previously exported file.</p></div>
+              <button class="btn" id="importAll" type="button">Import</button>
+              <input type="file" id="importFile" accept="application/json" hidden>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Delete all chats</label><p>This cannot be undone.</p></div>
+              <button class="btn btn-danger" id="deleteAll" type="button">Delete all</button>
+            </div>
+          </div>
+          <div class="panel" data-panel="config">
+            <div class="field">
+              <div class="field-text"><label>Export config</label><p>Save your settings, providers, and MCP servers to a file. You'll be asked whether to include keys.</p></div>
+              <button class="btn" type="button" data-action-btn="exportConfig">Export</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Save as defaults file</label><p>Save the current look (everything under Customization, plus Dark / Light mode) as <code>defaults.json</code>: the settings a fresh install starts with. Put it in the project's <code>config</code> folder before publishing. No keys or personal details are included.</p></div>
+              <button class="btn" type="button" data-action-btn="exportDefaults">Save</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Import config</label><p>Load settings from an exported file. Keys already on this device are kept if the file has none.</p></div>
+              <button class="btn" type="button" data-action-btn="importConfig">Import</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Reset to defaults</label><p>Restore every setting, and remove saved keys, endpoints, and MCP servers. Chats are kept.</p></div>
+              <button class="btn" type="button" data-action-btn="resetConfig">Reset</button>
+            </div>
+            <div class="field">
+              <div class="field-text"><label>Erase all data</label><p>Remove every chat, setting, and key Noctyl has stored in this browser.</p></div>
+              <button class="btn btn-danger" id="eraseAll" type="button">Erase</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="menu-layer" id="menuLayer"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <input type="file" id="attachInput" hidden multiple accept=".txt,.md,.json,.csv,.log,.py,.js,.ts,.html,.css,.c,.h,.cpp,.java,.go,.rs,.sh,.yml,.yaml,.xml,.sql">
+  <input type="file" id="imageInput" hidden multiple accept="image/png,image/jpeg,image/gif,image/webp">
+</div>
+
+<script src="assets/katex/katex.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

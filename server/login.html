@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<!-- Add to Home Screen: Noctyl's icon (not a letter) and a full-screen app -->
+<link rel="manifest" href="/assets/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/assets/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Noctyl">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>Sign in · Noctyl</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/login.css">
+</head>
+<body>
+<main class="auth" aria-live="polite">
+  <div class="mark"><img src="assets/Logo.png" alt="Noctyl" width="34" height="34"></div>
+
+  <!-- sign in: a name and a password, nothing else -->
+  <form id="signin" class="view" autocomplete="on" hidden>
+    <h1>Sign in to Noctyl</h1>
+    <p class="sub" id="signupLine" hidden>Don't have an account? <button type="button" class="link strong" data-go="signup" id="toSignup">Sign up</button>.</p>
+    <p class="sub" id="signupNote" hidden></p>
+    <label>Username<input name="name" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Username" required></label>
+    <label>Password<input name="password" type="password" autocomplete="current-password" placeholder="••••••••••" required></label>
+    <p class="err" role="alert"></p>
+    <button class="primary" type="submit">Sign in</button>
+    <p class="foot"><button type="button" class="link" data-go="recover">Forgot your password?</button></p>
+  </form>
+
+  <!-- create an account (the first one needs the setup code from the server window) -->
+  <form id="signup" class="view" autocomplete="on" hidden>
+    <h1 id="signupTitle">Create your account</h1>
+    <p class="sub" id="signupBack">Already have an account? <button type="button" class="link strong" data-go="signin">Sign in</button>.</p>
+    <p class="sub" id="setupLead" hidden>This is a new Noctyl server. The first account owns it and decides who else may sign up.</p>
+    <label id="setupField" hidden>Setup code<input name="setupCode" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="Printed in the server window"></label>
+    <label>Username<input name="name" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" placeholder="Username" required><small>3–32 letters, numbers, dots, dashes or underscores.</small></label>
+    <label>Password<input name="password" type="password" autocomplete="new-password" minlength="10" placeholder="At least 10 characters" required><small>It also unlocks your encrypted data, so pick one you'll remember.</small></label>
+    <label>Password again<input name="password2" type="password" autocomplete="new-password" minlength="10" required></label>
+    <p class="err" role="alert"></p>
+    <button class="primary" type="submit">Create account</button>
+  </form>
+
+  <!-- forgot password: the recovery code unlocks the account -->
+  <form id="recover" class="view" autocomplete="on" hidden>
+    <h1>Reset your password</h1>
+    <p class="sub">Use the recovery code you saved when you made your account. Without it nobody can open your data, not even the server's admin.</p>
+    <label>Username<input name="name" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+    <label>Recovery code<input name="code" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX" required></label>
+    <label>New password<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+    <label>New password again<input name="password2" type="password" autocomplete="new-password" minlength="10" required></label>
+    <p class="err" role="alert"></p>
+    <button class="primary" type="submit">Reset password</button>
+    <p class="foot"><button type="button" class="link" data-go="signin">Back to sign in</button></p>
+  </form>
+
+  <!-- an account an admin made: choose your own password first -->
+  <form id="password" class="view" autocomplete="on" hidden>
+    <h1>Choose your password</h1>
+    <p class="sub">An admin made this account with a temporary password. Pick your own; after that, only you can open your data.</p>
+    <label>New password<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+    <label>New password again<input name="password2" type="password" autocomplete="new-password" minlength="10" required></label>
+    <p class="err" role="alert"></p>
+    <button class="primary" type="submit">Save password</button>
+  </form>
+
+  <!-- shown once: the recovery code -->
+  <section id="recovery" class="view" hidden>
+    <h1>Save your recovery code</h1>
+    <p class="sub">If you forget your password, this code is the only way back into your account. Noctyl shows it just this once and doesn't keep a copy.</p>
+    <output class="code" id="code"></output>
+    <div class="row"><button type="button" class="ghost" id="copy">Copy</button><button type="button" class="ghost" id="download">Download</button></div>
+    <label class="check"><input type="checkbox" id="saved"> I saved it somewhere safe</label>
+    <button class="primary" type="button" id="continue" disabled>Continue to Noctyl</button>
+  </section>
+</main>
+<script src="/login.js"></script>
+</body>
+</html>
