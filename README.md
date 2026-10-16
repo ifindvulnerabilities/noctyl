@@ -2,12 +2,7 @@
 
 <p>
 
-  <a href="https://github.com/ifindvulnerabilities/noctyl">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/Noctyl-LogoBanner-Dark.svg">
-      <img alt="Noctyl" src="assets/Noctyl-LogoBanner-Light.svg" width="240">
-    </picture>
-  </a>
+  <a href="https://github.com/ifindvulnerabilities/noctyl"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/Noctyl-LogoBanner-Dark.svg" width="420"><source media="(prefers-color-scheme: light)" srcset="assets/Noctyl-LogoBanner-Light.svg" width="420"><img alt="Noctyl" src="assets/Noctyl-LogoBanner-Light.svg" width="420"></picture></a>
 </p>
 
 </div>
